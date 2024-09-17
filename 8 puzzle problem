@@ -1,0 +1,92 @@
+            import heapq
+
+            def find_zero(board):
+                for i in range(3):
+                    for j in range(3):
+                        if board[i][j] == 0:
+                            return (i, j)
+                return None
+
+            def get_neighbors(board):
+                neighbors = []
+                x, y = find_zero(board)
+                directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+                for dx, dy in directions:
+                    new_x, new_y = x + dx, y + dy
+                    if 0 <= new_x < 3 and 0 <= new_y < 3:
+                        new_board = [row[:] for row in board]
+                        new_board[x][y], new_board[new_x][new_y] = new_board[new_x][new_y], new_board[x][y]
+                        neighbors.append((new_board, (new_x, new_y)))
+                
+                return neighbors
+
+            def heuristic(board, goal):
+                distance = 0
+                goal_positions = {value: (i, j) for i, row in enumerate(goal) for j, value in enumerate(row)}
+                for i in range(3):
+                    for j in range(3):
+                        value = board[i][j]
+                        if value != 0:
+                            goal_x, goal_y = goal_positions[value]
+                            distance += abs(i - goal_x) + abs(j - goal_y)
+                return distance
+
+            def a_star_search(start, goal):
+                start_tuple = tuple(tuple(row) for row in start)
+                goal_tuple = tuple(tuple(row) for row in goal)
+                
+                if start_tuple == goal_tuple:
+                    return []
+
+                open_set = []
+                heapq.heappush(open_set, (0 + heuristic(start, goal), 0, start, []))
+                closed_set = set()
+                
+                while open_set:
+                    _, g_cost, current, path = heapq.heappop(open_set)
+                    current_tuple = tuple(tuple(row) for row in current)
+                    
+                    if current_tuple in closed_set:
+                        continue
+
+                    closed_set.add(current_tuple)
+
+                    if current_tuple == goal_tuple:
+                        return path
+
+                    for neighbor, _ in get_neighbors(current):
+                        neighbor_tuple = tuple(tuple(row) for row in neighbor)
+                        if neighbor_tuple in closed_set:
+                            continue
+                        h_cost = heuristic(neighbor, goal)
+                        heapq.heappush(open_set, (g_cost + 1 + h_cost, g_cost + 1, neighbor, path + [neighbor]))
+
+                return None
+
+            def print_board(board):
+                for row in board:
+                    print(" ".join(map(str, row)))
+                print()
+
+            if __name__ == "__main__":
+                start_state = [
+                    [1, 2, 3],
+                    [4, 0, 5],
+                    [7, 8, 6]
+                ]
+                
+                goal_state = [
+                    [1, 2, 3],
+                    [4, 5, 6],
+                    [7, 8, 0]
+                ]
+                
+                solution = a_star_search(start_state, goal_state)
+                
+                if solution:
+                    print("Solution found:")
+                    for step in solution:
+                        print_board(step)
+                else:
+                    print("No solution found.")
